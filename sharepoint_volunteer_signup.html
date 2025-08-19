@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tailgate Event Volunteer Sign-up</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 10px;
+    overflow-x: hidden;
+    margin: 0;
+}
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(8px);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+.header {
+    background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+.header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 1px 1px 3px rgba(0,0,0,0.2);}
+.header p { font-size: 1.2em; opacity: 0.85;}
+.content { padding: 30px; }
+.day-section {
+    margin-bottom: 40px;
+    border: 2px solid #9b59b6;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.day-section:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.08);}
+.day-header {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+    color: white;
+    padding: 20px;
+    font-size: 1.5em;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+.committee-only { background: linear-gradient(135deg, #f39c12 0%, #d35400 100%);}
+.event-day { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);}
+.time-slots { display: grid; gap: 20px; padding: 20px;}
+.time-slot {
+    background: white;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+.time-slot:hover { border-color: #2980b9; box-shadow: 0 5px 15px rgba(41,128,185,0.2);}
+.time-slot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #ecf0f1;}
+.time { font-weight: bold; font-size: 1.2em; color: #2c3e50;}
+.committee-badge { background: #f39c12; color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8em; font-weight: bold;}
+.task-description { margin-bottom: 15px; font-style: italic; color: #7f8c8d; line-height: 1.5;}
+.volunteer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;}
+.volunteer-slot {
+    background: #f8f9fa;
+    border: 2px dashed #bdc3c7;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+.volunteer-slot:hover { background: #e8f4fd; border-color: #2980b9; transform: scale(1.02);}
+.volunteer-slot.filled { 
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); 
+    color: white; 
+    border-color: #27ae60;
+    border-style: solid;
+}
+.volunteer-slot.filled:hover {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    border-color: #c0392b;
+}
+.volunteer-slot.filled::after {
+    content: " (click to remove)";
+    font-size: 0.8em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.volunteer-slot.filled:hover::after {
+    opacity: 1;
+}
+.instructions { background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%); color: white; padding: 20px; border-radius: 15px; margin-bottom: 30px;}
+.instructions h3 { margin-bottom: 10px; }
+.instructions ul { list-style: none; padding-left: 0; }
+.instructions li { margin-bottom: 8px; padding-left: 20px; position: relative;}
+.instructions li:before { content: "✓"; position: absolute; left: 0; font-weight: bold;}
+.export-section { background: #f8f9fa; padding: 20px; border-radius: 15px; margin-top: 30px; text-align: center;}
+.export-btn { background: linear-gradient(135deg, #6c5ce7 0%, #5f3dc4 100%); color: white; border: none; padding: 15px 30px; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 16px; transition: all 0.3s ease; margin: 0 10px;}
+.export-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(108,92,231,0.3);}
+.status-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #2ecc71;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.status-indicator.show { opacity: 1; }
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+.modal-buttons {
+    margin-top: 20px;
+}
+.modal-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 0 10px;
+    font-size: 16px;
+}
+.modal-btn.confirm { background: #e74c3c; }
+.modal-btn:hover { opacity: 0.8; }
+.volunteer-input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    margin: 10px 0;
+}
+@media (max-width: 768px) { 
+    .volunteer-grid { grid-template-columns: 1fr; } 
+    .header h1 { font-size: 2em; }
+    .status-indicator { position: relative; margin-bottom: 20px; }
+}
+</style>
+
+<!--[if gte mso 9]><xml>
+<mso:CustomDocumentProperties>
+<mso:_dlc_DocId msdt:dt="string">RYKS6E3NQVMT-1952687634-1545</mso:_dlc_DocId>
+<mso:_dlc_DocIdItemGuid msdt:dt="string">bc2d45ac-8db9-4212-ab02-b2384160cb02</mso:_dlc_DocIdItemGuid>
+<mso:_dlc_DocIdUrl msdt:dt="string">https://dmsi.sharepoint.com/hr/_layouts/15/DocIdRedir.aspx?ID=RYKS6E3NQVMT-1952687634-1545, RYKS6E3NQVMT-1952687634-1545</mso:_dlc_DocIdUrl>
+</mso:CustomDocumentProperties>
+</xml><![endif]-->
+</head>
+<body>
+<div class="status-indicator" id="statusIndicator">Changes saved ✓</div>
+
+<div class="modal" id="volunteerModal">
+    <div class="modal-content">
+        <h3>Add Volunteer</h3>
+        <p>Enter your name to sign up for this volunteer slot:</p>
+        <input type="text" id="volunteerName" class="volunteer-input" placeholder="Enter your full name" maxlength="50">
+        <div class="modal-buttons">
+            <button class="modal-btn" onclick="closeModal()">Cancel</button>
+            <button class="modal-btn confirm" onclick="confirmAddVolunteer()">Sign Up</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="removeModal">
+    <div class="modal-content">
+        <h3>Remove Volunteer</h3>
+        <p>Are you sure you want to remove <span id="volunteerToRemove"></span> from this slot?</p>
+        <div class="modal-buttons">
+            <button class="modal-btn" onclick="closeRemoveModal()">Cancel</button>
+            <button class="modal-btn confirm" onclick="confirmRemoveVolunteer()">Remove</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="header">
+        <h1>🏈 Tailgate Event Volunteer Sign-up</h1>
+        <p>September 22-25, 2025 | Thank you for making this Tailgate amazing!</p>
+    </div>
+
+    <div class="content">
+        <div class="instructions">
+            <h3>📋 Sign-up Instructions:</h3>
+            <ul>
+                <li>Monday & Tuesday: Committee Members Only for Prep Work</li>
+                <li>Wednesday 5-6 PM: Committee Members Only for Setup</li>
+                <li>Thursday: All volunteers welcome for event day activities</li>
+                <li>Click on empty volunteer slots to add your information</li>
+                <li>Click on filled slots to remove volunteers if needed</li>
+                <li>Your changes are automatically saved and will persist</li>
+            </ul>
+        </div>
+
+        <!-- Monday -->
+        <div class="day-section">
+            <div class="day-header">📅 Monday, September 22nd - Prep Day (Committee Only)</div>
+            <div class="time-slots">
+                <div class="time-slot">
+                    <div class="time-slot-header">
+                        <span class="time">8:30 AM - 4:00 PM</span>
+                        <span class="committee-badge">Committee Only</span>
+                    </div>
+                    <div class="task-description">
+                        Preparing Tailgate Gifts - Committee members will work on assembling and organizing all tailgate gifts for distribution.
+                    </div>
+                    <div class="volunteer-grid" data-day="monday" data-time="8:30-4:00" data-task="prep-gifts">
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tuesday -->
+        <div class="day-section">
+            <div class="day-header">📅 Tuesday, September 23rd - Prep Day (Committee Only)</div>
+            <div class="time-slots">
+                <div class="time-slot">
+                    <div class="time-slot-header">
+                        <span class="time">8:30 AM - 4:00 PM</span>
+                        <span class="committee-badge">Committee Only</span>
+                    </div>
+                    <div class="task-description">
+                        Preparing Tailgate Gifts - Continue gift preparation and final organization tasks.
+                    </div>
+                    <div class="volunteer-grid" data-day="tuesday" data-time="8:30-4:00" data-task="prep-gifts">
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wednesday -->
+        <div class="day-section">
+            <div class="day-header committee-only">📅 Wednesday, September 24th - Setup Day</div>
+            <div class="time-slots">
+                <div class="time-slot">
+                    <div class="time-slot-header">
+                        <span class="time">5:00 PM - 6:00 PM</span>
+                        <span class="committee-badge">Committee Only</span>
+                    </div>
+                    <div class="task-description">
+                        Setting out Tailgate Gifts - Committee members will arrange and position gifts at designated locations.
+                    </div>
+                    <div class="volunteer-grid" data-day="wednesday" data-time="5:00-6:00" data-task="setup-gifts">
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thursday -->
+        <div class="day-section">
+            <div class="day-header event-day">🎉 Thursday, September 25th - TAILGATE EVENT DAY!</div>
+            <div class="time-slots">
+                <div class="time-slot">
+                    <div class="time-slot-header"><span class="time">9:30 AM - 11:30 AM</span></div>
+                    <div class="task-description">
+                        Moving Items to Loading Dock - Help transport all tailgate supplies and equipment to the loading dock area.
+                    </div>
+                    <div class="volunteer-grid" data-day="thursday" data-time="9:30-11:30" data-task="move-items">
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                    </div>
+                </div>
+                <div class="time-slot">
+                    <div class="time-slot-header"><span class="time">1:00 PM - 2:30 PM</span></div>
+                    <div class="task-description">
+                        Tailgate Setup - Set up tables, fill coolers, and move all Tailgate items on the loading dock to the top level parking deck.
+                    </div>
+                    <div class="volunteer-grid" data-day="thursday" data-time="1:00-2:30" data-task="setup-tailgate">
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                    </div>
+                </div>
+                <div class="time-slot">
+                    <div class="time-slot-header"><span class="time">5:45 PM - 6:15 PM</span></div>
+                    <div class="task-description">
+                        Event Breakdown - Load trucks with cocktail rounds, pack up trash and haul to dumpster, pack leftover food for Fox's Den fridge, and complete event cleanup.
+                    </div>
+                    <div class="volunteer-grid" data-day="thursday" data-time="5:45-6:15" data-task="breakdown">
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                        <div class="volunteer-slot" onclick="handleVolunteerClick(this)">+ Add Volunteer</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="export-section">
+            <h3>📊 Export Volunteer Data</h3>
+            <p>Export your volunteer data for use in PowerApps or other applications:</p>
+            <button class="export-btn" onclick="exportToCSV()">Export to CSV</button>
+            <button class="export-btn" onclick="exportToJSON()">Export to JSON</button>
+            <button class="export-btn" onclick="showPowerAppsData()">View Data</button>
+            <button class="export-btn" onclick="showBackupURL()" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);">Get Backup URL</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enhanced data persistence for iframe environments
+let volunteerData = [];
+let currentSlot = null;
+let slotToRemove = null;
+let dataBackup = '';
+
+// Multiple persistence strategies
+function initializeData() {
+    let dataLoaded = false;
+    
+    // Strategy 1: Try localStorage
+    try {
+        const saved = localStorage.getItem('tailgateVolunteers2025');
+        if (saved) {
+            volunteerData = JSON.parse(saved);
+            dataLoaded = true;
+            console.log('Data loaded from localStorage');
+        }
+    } catch (e) {
+        console.log('localStorage not available');
+    }
+    
+    // Strategy 2: Try sessionStorage
+    if (!dataLoaded) {
+        try {
+            const sessionSaved = sessionStorage.getItem('tailgateVolunteers2025');
+            if (sessionSaved) {
+                volunteerData = JSON.parse(sessionSaved);
+                dataLoaded = true;
+                console.log('Data loaded from sessionStorage');
+            }
+        } catch (e) {
+            console.log('sessionStorage not available');
+        }
+    }
+    
+    // Strategy 3: Try to restore from URL parameters (for iframe persistence)
+    if (!dataLoaded) {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedData = urlParams.get('data');
+            if (encodedData) {
+                volunteerData = JSON.parse(atob(encodedData));
+                dataLoaded = true;
+                console.log('Data loaded from URL parameters');
+            }
+        } catch (e) {
+            console.log('URL data restore failed');
+        }
+    }
+    
+    // Initialize with empty array if no data found
+    if (!volunteerData || !Array.isArray(volunteerData)) {
+        volunteerData = [];
+    }
+    
+    populateVolunteers();
+    updateDataBackup();
+}
+
+function saveData() {
+    let saveSuccess = false;
+    
+    // Strategy 1: Try localStorage
+    try {
+        localStorage.setItem('tailgateVolunteers2025', JSON.stringify(volunteerData));
+        saveSuccess = true;
+    } catch (e) {
+        console.log('localStorage save failed');
+    }
+    
+    // Strategy 2: Try sessionStorage as backup
+    try {
+        sessionStorage.setItem('tailgateVolunteers2025', JSON.stringify(volunteerData));
+        saveSuccess = true;
+    } catch (e) {
+        console.log('sessionStorage save failed');
+    }
+    
+    // Strategy 3: Create backup URL for manual restoration
+    updateDataBackup();
+    
+    showStatusIndicator(saveSuccess);
+}
+
+function updateDataBackup() {
+    if (volunteerData.length > 0) {
+        try {
+            const encoded = btoa(JSON.stringify(volunteerData));
+            dataBackup = `${window.location.pathname}?data=${encoded}`;
+        } catch (e) {
+            console.log('Backup URL creation failed');
+        }
+    }
+}
+
+function showStatusIndicator(saveSuccess = true) {
+    const indicator = document.getElementById('statusIndicator');
+    if (saveSuccess) {
+        indicator.textContent = 'Changes saved ✓';
+        indicator.style.background = '#2ecc71';
+    } else {
+        indicator.textContent = 'Saved in memory only';
+        indicator.style.background = '#f39c12';
+    }
+    indicator.classList.add('show');
+    setTimeout(() => {
+        indicator.classList.remove('show');
+    }, 3000);
+}
+
+function handleVolunteerClick(slot) {
+    if (slot.classList.contains('filled')) {
+        // Show remove confirmation
+        const name = slot.textContent.replace(' (click to remove)', '');
+        document.getElementById('volunteerToRemove').textContent = name;
+        slotToRemove = slot;
+        document.getElementById('removeModal').style.display = 'block';
+    } else {
+        // Show add volunteer modal
+        currentSlot = slot;
+        document.getElementById('volunteerModal').style.display = 'block';
+        document.getElementById('volunteerName').focus();
+    }
+}
+
+function closeModal() {
+    document.getElementById('volunteerModal').style.display = 'none';
+    document.getElementById('volunteerName').value = '';
+    currentSlot = null;
+}
+
+function closeRemoveModal() {
+    document.getElementById('removeModal').style.display = 'none';
+    slotToRemove = null;
+}
+
+function confirmAddVolunteer() {
+    const name = document.getElementById('volunteerName').value.trim();
+    if (!name) {
+        alert('Please enter a name');
+        return;
+    }
+    
+    if (name.length > 50) {
+        alert('Name is too long. Please enter a shorter name.');
+        return;
+    }
+    
+    const grid = currentSlot.closest('.volunteer-grid');
+    const day = grid.dataset.day;
+    const time = grid.dataset.time;
+    const task = grid.dataset.task;
+    
+    // Check if person is already signed up for this time slot
+    const existing = volunteerData.find(v => 
+        v.name.toLowerCase() === name.toLowerCase() && 
+        v.day === day && 
+        v.time === time && 
+        v.task === task
+    );
+    
+    if (existing) {
+        alert('This person is already signed up for this time slot.');
+        return;
+    }
+    
+    const slotData = { name, day, time, task, timestamp: new Date().toISOString() };
+    volunteerData.push(slotData);
+    saveData();
+    populateVolunteers();
+    closeModal();
+}
+
+function confirmRemoveVolunteer() {
+    const name = document.getElementById('volunteerToRemove').textContent;
+    const grid = slotToRemove.closest('.volunteer-grid');
+    const day = grid.dataset.day;
+    const time = grid.dataset.time;
+    const task = grid.dataset.task;
+    
+    volunteerData = volunteerData.filter(v => 
+        !(v.name === name && v.day === day && v.time === time && v.task === task)
+    );
+    
+    saveData();
+    populateVolunteers();
+    closeRemoveModal();
+}
+
+function populateVolunteers() {
+    document.querySelectorAll('.volunteer-grid').forEach(grid => {
+        const day = grid.dataset.day;
+        const time = grid.dataset.time;
+        const task = grid.dataset.task;
+        const slots = Array.from(grid.children);
+        const volunteers = volunteerData.filter(v => 
+            v.day === day && v.time === time && v.task === task
+        );
+        
+        slots.forEach((slot, index) => {
+            if (volunteers[index]) {
+                slot.textContent = volunteers[index].name;
+                slot.classList.add('filled');
+            } else {
+                slot.textContent = '+ Add Volunteer';
+                slot.classList.remove('filled');
+            }
+        });
+    });
+}
+
+function exportToCSV() {
+    if (volunteerData.length === 0) {
+        alert('No volunteer data to export.');
+        return;
+    }
+    
+    const headers = ['Day', 'Time', 'Task', 'Volunteer Name', 'Sign-up Date'];
+    const rows = volunteerData.map(v => [
+        v.day, 
+        v.time, 
+        v.task, 
+        v.name,
+        v.timestamp ? new Date(v.timestamp).toLocaleDateString() : 'N/A'
+    ]);
+    
+    let csvContent = 'data:text/csv;charset=utf-8,' + 
+        headers.join(',') + '\n' + 
+        rows.map(e => e.map(field => `"${field}"`).join(',')).join('\n');
+    
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `tailgate_volunteers_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function exportToJSON() {
+    if (volunteerData.length === 0) {
+        alert('No volunteer data to export.');
+        return;
+    }
+    
+    const dataStr = "data:text/json;charset=utf-8," + 
+        encodeURIComponent(JSON.stringify(volunteerData, null, 2));
+    const link = document.createElement('a');
+    link.setAttribute('href', dataStr);
+    link.setAttribute('download', `tailgate_volunteers_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function showPowerAppsData() {
+    if (volunteerData.length === 0) {
+        alert('No volunteer data available.');
+        return;
+    }
+    
+    const summary = volunteerData.reduce((acc, volunteer) => {
+        const key = `${volunteer.day} - ${volunteer.time}`;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(volunteer.name);
+        return acc;
+    }, {});
+    
+    let message = 'VOLUNTEER SIGN-UPS SUMMARY:\n\n';
+    Object.entries(summary).forEach(([slot, volunteers]) => {
+        message += `${slot}:\n${volunteers.join(', ')}\n\n`;
+    });
+    
+    alert(message);
+}
+
+function showBackupURL() {
+    if (volunteerData.length === 0) {
+        alert('No volunteer data to backup.');
+        return;
+    }
+    
+    if (dataBackup) {
+        const message = `BACKUP URL (bookmark this to restore your data):\n\n${dataBackup}\n\nCopy this URL and bookmark it. If data is lost, navigate to this URL to restore all volunteer sign-ups.`;
+        
+        // Try to copy to clipboard
+        try {
+            navigator.clipboard.writeText(dataBackup).then(() => {
+                alert(message + '\n\n✓ URL copied to clipboard!');
+            }).catch(() => {
+                alert(message);
+            });
+        } catch (e) {
+            alert(message);
+        }
+    } else {
+        alert('Backup URL could not be generated.');
+    }
+}
+
+// Handle Enter key in input
+document.getElementById('volunteerName').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        confirmAddVolunteer();
+    }
+});
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const volunteerModal = document.getElementById('volunteerModal');
+    const removeModal = document.getElementById('removeModal');
+    if (event.target === volunteerModal) {
+        closeModal();
+    }
+    if (event.target === removeModal) {
+        closeRemoveModal();
+    }
+}
+
+// Initialize on load
+window.addEventListener('load', function() {
+    initializeData();
+    
+    // Auto-adjust height for SharePoint
+    function adjustHeight() {
+        const body = document.body;
+        const html = document.documentElement;
+        const height = Math.max(
+            body.scrollHeight, 
+            body.offsetHeight, 
+            html.clientHeight, 
+            html.scrollHeight, 
+            html.offsetHeight
+        );
+        document.body.style.minHeight = height + "px";
+    }
+    
+    adjustHeight();
+    window.addEventListener('resize', adjustHeight);
+    
+    // Periodic height adjustment for dynamic content
+    setInterval(adjustHeight, 2000);
+    
+    // Add periodic auto-save
+    setInterval(() => {
+        if (volunteerData.length > 0) {
+            saveData();
+        }
+    }, 30000); // Auto-save every 30 seconds
+});
+
+// Prevent form submission on Enter key in modals
+document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && e.target.classList.contains('volunteer-input')) {
+        e.preventDefault();
+        if (document.getElementById('volunteerModal').style.display === 'block') {
+            confirmAddVolunteer();
+        }
+    }
+});
+</script>
+</body>
+</html>
