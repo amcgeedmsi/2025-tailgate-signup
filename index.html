@@ -116,6 +116,18 @@ body {
     transition: opacity 0.3s ease;
 }
 .status-indicator.show { opacity: 1; }
+.connection-status {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    z-index: 1000;
+    opacity: 0.7;
+}
+.connected { background: #2ecc71; color: white; }
+.disconnected { background: #e74c3c; color: white; }
 .modal {
     display: none;
     position: fixed;
@@ -162,20 +174,21 @@ body {
 @media (max-width: 768px) { 
     .volunteer-grid { grid-template-columns: 1fr; } 
     .header h1 { font-size: 2em; }
-    .status-indicator { position: relative; margin-bottom: 20px; }
+    .status-indicator, .connection-status { position: relative; margin-bottom: 20px; }
 }
 </style>
 
 <!--[if gte mso 9]><xml>
 <mso:CustomDocumentProperties>
-<mso:_dlc_DocId msdt:dt="string">RYKS6E3NQVMT-1952687634-1545</mso:_dlc_DocId>
-<mso:_dlc_DocIdItemGuid msdt:dt="string">bc2d45ac-8db9-4212-ab02-b2384160cb02</mso:_dlc_DocIdItemGuid>
-<mso:_dlc_DocIdUrl msdt:dt="string">https://dmsi.sharepoint.com/hr/_layouts/15/DocIdRedir.aspx?ID=RYKS6E3NQVMT-1952687634-1545, RYKS6E3NQVMT-1952687634-1545</mso:_dlc_DocIdUrl>
+<mso:_dlc_DocId msdt:dt="string">RYKS6E3NQVMT-1952687634-1544</mso:_dlc_DocId>
+<mso:_dlc_DocIdItemGuid msdt:dt="string">65d81110-1745-4642-90a2-7b25810cbb95</mso:_dlc_DocIdItemGuid>
+<mso:_dlc_DocIdUrl msdt:dt="string">https://dmsi.sharepoint.com/hr/_layouts/15/DocIdRedir.aspx?ID=RYKS6E3NQVMT-1952687634-1544, RYKS6E3NQVMT-1952687634-1544</mso:_dlc_DocIdUrl>
 </mso:CustomDocumentProperties>
 </xml><![endif]-->
 </head>
 <body>
 <div class="status-indicator" id="statusIndicator">Changes saved ✓</div>
+<div class="connection-status connected" id="connectionStatus">🔗 Connected</div>
 
 <div class="modal" id="volunteerModal">
     <div class="modal-content">
@@ -202,7 +215,7 @@ body {
 
 <div class="container">
     <div class="header">
-        <h1>🏈 Tailgate Event Volunteer Sign-up</h1>
+        <h1>📼 Tailgate Event Volunteer Sign-up</h1>
         <p>September 22-25, 2025 | Thank you for making this Tailgate amazing!</p>
     </div>
 
@@ -215,7 +228,7 @@ body {
                 <li>Thursday: All volunteers welcome for event day activities</li>
                 <li>Click on empty volunteer slots to add your information</li>
                 <li>Click on filled slots to remove volunteers if needed</li>
-                <li>Your changes are automatically saved and will persist</li>
+                <li>All changes sync automatically across all devices!</li>
             </ul>
         </div>
 
@@ -346,117 +359,153 @@ body {
             <button class="export-btn" onclick="exportToCSV()">Export to CSV</button>
             <button class="export-btn" onclick="exportToJSON()">Export to JSON</button>
             <button class="export-btn" onclick="showPowerAppsData()">View Data</button>
-            <button class="export-btn" onclick="showBackupURL()" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);">Get Backup URL</button>
+            <button class="export-btn" onclick="clearAllData()" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">Clear All Data</button>
         </div>
     </div>
 </div>
 
+<!-- Firebase SDK -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
+
 <script>
-// Enhanced data persistence for iframe environments
+// Firebase Configuration (using a demo database - replace with your own)
+const firebaseConfig = {
+  apiKey: "AIzaSyDa9z1M93qHX-PonWrsbM5zVFcR_48oJxo",
+  authDomain: "tailgate-signup.firebaseapp.com",
+  databaseURL: "https://tailgate-signup-default-rtdb.firebaseio.com",
+  projectId: "tailgate-signup",
+  storageBucket: "tailgate-signup.firebasestorage.app",
+  messagingSenderId: "178104426091",
+  appId: "1:178104426091:web:a72bdeb997c86843a99b2e",
+  measurementId: "G-HF3B7VDRR6"
+};
+
+let db;
+let isOnline = false;
 let volunteerData = [];
 let currentSlot = null;
 let slotToRemove = null;
-let dataBackup = '';
 
-// Multiple persistence strategies
-function initializeData() {
-    let dataLoaded = false;
+// Initialize Firebase or fallback to local storage
+function initializeDatabase() {
+    try {
+        // Try to initialize Firebase
+        if (typeof firebase !== 'undefined') {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            setupFirebaseListeners();
+            updateConnectionStatus(true);
+            console.log('Firebase initialized successfully');
+        } else {
+            throw new Error('Firebase not loaded');
+        }
+    } catch (error) {
+        console.log('Firebase initialization failed, using local storage:', error);
+        initializeLocalStorage();
+        updateConnectionStatus(false);
+    }
+}
+
+function setupFirebaseListeners() {
+    const volunteersRef = db.ref('volunteers');
     
-    // Strategy 1: Try localStorage
+    // Listen for real-time updates
+    volunteersRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        volunteerData = data ? Object.values(data) : [];
+        populateVolunteers();
+    });
+
+    // Handle connection status
+    const connectedRef = db.ref('.info/connected');
+    connectedRef.on('value', (snapshot) => {
+        isOnline = snapshot.val() === true;
+        updateConnectionStatus(isOnline);
+    });
+}
+
+function initializeLocalStorage() {
     try {
         const saved = localStorage.getItem('tailgateVolunteers2025');
-        if (saved) {
-            volunteerData = JSON.parse(saved);
-            dataLoaded = true;
-            console.log('Data loaded from localStorage');
-        }
+        volunteerData = saved ? JSON.parse(saved) : [];
+        populateVolunteers();
     } catch (e) {
-        console.log('localStorage not available');
-    }
-    
-    // Strategy 2: Try sessionStorage
-    if (!dataLoaded) {
-        try {
-            const sessionSaved = sessionStorage.getItem('tailgateVolunteers2025');
-            if (sessionSaved) {
-                volunteerData = JSON.parse(sessionSaved);
-                dataLoaded = true;
-                console.log('Data loaded from sessionStorage');
-            }
-        } catch (e) {
-            console.log('sessionStorage not available');
-        }
-    }
-    
-    // Strategy 3: Try to restore from URL parameters (for iframe persistence)
-    if (!dataLoaded) {
-        try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const encodedData = urlParams.get('data');
-            if (encodedData) {
-                volunteerData = JSON.parse(atob(encodedData));
-                dataLoaded = true;
-                console.log('Data loaded from URL parameters');
-            }
-        } catch (e) {
-            console.log('URL data restore failed');
-        }
-    }
-    
-    // Initialize with empty array if no data found
-    if (!volunteerData || !Array.isArray(volunteerData)) {
         volunteerData = [];
+        console.log('Local storage failed, using memory only');
     }
-    
-    populateVolunteers();
-    updateDataBackup();
 }
 
-function saveData() {
-    let saveSuccess = false;
-    
-    // Strategy 1: Try localStorage
+function updateConnectionStatus(connected) {
+    const status = document.getElementById('connectionStatus');
+    if (connected) {
+        status.textContent = '🔗 Live Sync';
+        status.className = 'connection-status connected';
+    } else {
+        status.textContent = '💾 Local Only';
+        status.className = 'connection-status disconnected';
+    }
+}
+
+function saveVolunteer(volunteerInfo) {
+    if (db && isOnline) {
+        // Save to Firebase
+        const volunteerRef = db.ref('volunteers').push();
+        volunteerRef.set({
+            id: volunteerRef.key,
+            ...volunteerInfo,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            showStatusIndicator('Synced to all devices ✓');
+        }).catch((error) => {
+            console.log('Firebase save failed:', error);
+            saveToLocalStorage();
+        });
+    } else {
+        // Fallback to local storage
+        volunteerData.push({
+            id: Date.now().toString(),
+            ...volunteerInfo,
+            timestamp: new Date().toISOString()
+        });
+        saveToLocalStorage();
+    }
+}
+
+function removeVolunteer(name, day, time, task) {
+    if (db && isOnline) {
+        // Remove from Firebase
+        const volunteersRef = db.ref('volunteers');
+        volunteersRef.orderByChild('name').equalTo(name).once('value', (snapshot) => {
+            snapshot.forEach((child) => {
+                const volunteer = child.val();
+                if (volunteer.day === day && volunteer.time === time && volunteer.task === task) {
+                    child.ref.remove();
+                }
+            });
+        });
+    } else {
+        // Remove from local storage
+        volunteerData = volunteerData.filter(v => 
+            !(v.name === name && v.day === day && v.time === time && v.task === task)
+        );
+        saveToLocalStorage();
+        populateVolunteers();
+    }
+}
+
+function saveToLocalStorage() {
     try {
         localStorage.setItem('tailgateVolunteers2025', JSON.stringify(volunteerData));
-        saveSuccess = true;
+        showStatusIndicator('Saved locally ✓');
     } catch (e) {
-        console.log('localStorage save failed');
-    }
-    
-    // Strategy 2: Try sessionStorage as backup
-    try {
-        sessionStorage.setItem('tailgateVolunteers2025', JSON.stringify(volunteerData));
-        saveSuccess = true;
-    } catch (e) {
-        console.log('sessionStorage save failed');
-    }
-    
-    // Strategy 3: Create backup URL for manual restoration
-    updateDataBackup();
-    
-    showStatusIndicator(saveSuccess);
-}
-
-function updateDataBackup() {
-    if (volunteerData.length > 0) {
-        try {
-            const encoded = btoa(JSON.stringify(volunteerData));
-            dataBackup = `${window.location.pathname}?data=${encoded}`;
-        } catch (e) {
-            console.log('Backup URL creation failed');
-        }
+        showStatusIndicator('Save failed ✗');
     }
 }
 
-function showStatusIndicator(saveSuccess = true) {
+function showStatusIndicator(message) {
     const indicator = document.getElementById('statusIndicator');
-    if (saveSuccess) {
-        indicator.textContent = 'Changes saved ✓';
-        indicator.style.background = '#2ecc71';
-    } else {
-        indicator.textContent = 'Saved in memory only';
-        indicator.style.background = '#f39c12';
-    }
+    indicator.textContent = message;
     indicator.classList.add('show');
     setTimeout(() => {
         indicator.classList.remove('show');
@@ -465,13 +514,11 @@ function showStatusIndicator(saveSuccess = true) {
 
 function handleVolunteerClick(slot) {
     if (slot.classList.contains('filled')) {
-        // Show remove confirmation
         const name = slot.textContent.replace(' (click to remove)', '');
         document.getElementById('volunteerToRemove').textContent = name;
         slotToRemove = slot;
         document.getElementById('removeModal').style.display = 'block';
     } else {
-        // Show add volunteer modal
         currentSlot = slot;
         document.getElementById('volunteerModal').style.display = 'block';
         document.getElementById('volunteerName').focus();
@@ -519,10 +566,8 @@ function confirmAddVolunteer() {
         return;
     }
     
-    const slotData = { name, day, time, task, timestamp: new Date().toISOString() };
-    volunteerData.push(slotData);
-    saveData();
-    populateVolunteers();
+    const volunteerInfo = { name, day, time, task };
+    saveVolunteer(volunteerInfo);
     closeModal();
 }
 
@@ -533,12 +578,7 @@ function confirmRemoveVolunteer() {
     const time = grid.dataset.time;
     const task = grid.dataset.task;
     
-    volunteerData = volunteerData.filter(v => 
-        !(v.name === name && v.day === day && v.time === time && v.task === task)
-    );
-    
-    saveData();
-    populateVolunteers();
+    removeVolunteer(name, day, time, task);
     closeRemoveModal();
 }
 
@@ -622,96 +662,3 @@ function showPowerAppsData() {
     
     let message = 'VOLUNTEER SIGN-UPS SUMMARY:\n\n';
     Object.entries(summary).forEach(([slot, volunteers]) => {
-        message += `${slot}:\n${volunteers.join(', ')}\n\n`;
-    });
-    
-    alert(message);
-}
-
-function showBackupURL() {
-    if (volunteerData.length === 0) {
-        alert('No volunteer data to backup.');
-        return;
-    }
-    
-    if (dataBackup) {
-        const message = `BACKUP URL (bookmark this to restore your data):\n\n${dataBackup}\n\nCopy this URL and bookmark it. If data is lost, navigate to this URL to restore all volunteer sign-ups.`;
-        
-        // Try to copy to clipboard
-        try {
-            navigator.clipboard.writeText(dataBackup).then(() => {
-                alert(message + '\n\n✓ URL copied to clipboard!');
-            }).catch(() => {
-                alert(message);
-            });
-        } catch (e) {
-            alert(message);
-        }
-    } else {
-        alert('Backup URL could not be generated.');
-    }
-}
-
-// Handle Enter key in input
-document.getElementById('volunteerName').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        confirmAddVolunteer();
-    }
-});
-
-// Close modals when clicking outside
-window.onclick = function(event) {
-    const volunteerModal = document.getElementById('volunteerModal');
-    const removeModal = document.getElementById('removeModal');
-    if (event.target === volunteerModal) {
-        closeModal();
-    }
-    if (event.target === removeModal) {
-        closeRemoveModal();
-    }
-}
-
-// Initialize on load
-window.addEventListener('load', function() {
-    initializeData();
-    
-    // Auto-adjust height for SharePoint
-    function adjustHeight() {
-        const body = document.body;
-        const html = document.documentElement;
-        const height = Math.max(
-            body.scrollHeight, 
-            body.offsetHeight, 
-            html.clientHeight, 
-            html.scrollHeight, 
-            html.offsetHeight
-        );
-        document.body.style.minHeight = height + "px";
-    }
-    
-    adjustHeight();
-    window.addEventListener('resize', adjustHeight);
-    
-    // Periodic height adjustment for dynamic content
-    setInterval(adjustHeight, 2000);
-    
-    // Add periodic auto-save
-    setInterval(() => {
-        if (volunteerData.length > 0) {
-            saveData();
-        }
-    }, 30000); // Auto-save every 30 seconds
-});
-
-// Prevent form submission on Enter key in modals
-document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && e.target.classList.contains('volunteer-input')) {
-        e.preventDefault();
-        if (document.getElementById('volunteerModal').style.display === 'block') {
-            confirmAddVolunteer();
-        }
-    }
-});
-</script>
-</body>
-</html>
